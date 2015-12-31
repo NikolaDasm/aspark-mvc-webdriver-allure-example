@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+     Examples: ASpark MVC WEBDriver Allure
+     Copyright (C) 2015  Nikolay Platov
+ 
+     This program is free software: you can redistribute it and/or modify
+     it under the terms of the GNU Lesser General Public License as published by
+     the Free Software Foundation, either version 3 of the License, or
+     (at your option) any later version.
+ 
+     This program is distributed in the hope that it will be useful,
+     but WITHOUT ANY WARRANTY; without even the implied warranty of
+     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+     GNU Lesser General Public License for more details.
+ 
+     You should have received a copy of the GNU Lesser General Public License
+     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+-->
+<project  xmlns:ivy="antlib:org.apache.ivy.ant"
+	name="aspark-mvc-example">
+	<property name="version" value="0.1.1b"/>
+	<property name="src.dir" value="src"/>
+	<property name="test.dir" value="test"/>
+	<property name="build.dir" value="build"/>
+	<property name="src.classes.dir" value="${build.dir}/classes"/>
+	<property name="test.classes.dir" value="${build.dir}/test-classes"/>
+	<property name="ivy.install.version" value="2.4.0"/>
+	<property name="lib.dir" value="lib"/>
+	<property name="ivy.jar.dir" value="${lib.dir}/ivy"/>
+	<property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar"/>
+	<property name="ivy.settings.file" value="ivysettings.xml"/>
+	<property name="ivy.file" value="ivy.xml"/>
+	<property name="test.lib.dir" value="${lib.dir}/test"/>
+    <property name="jar.dir" value="${build.dir}/jar"/>
+
+	<property name="classOutputDir" value="build" />
+
+	<property name="main-class" value="nikoladasm.examples.aspark_mvc_webdriver_allure.Launcher"/>
+
+	<property name="junit.dir" value="${build.dir}/junit"/>
+	<property name="allure.results.dir" value="build/allure-results"/>
+	<property name="allure.report.dir" value="${build.dir}/allure"/>
+
+	<path id='src.compile.classpath'>
+		<fileset dir="${lib.dir}">
+			<include name="*.jar"/>
+		</fileset>
+	</path>
+
+	<path id='test.compile.classpath'>
+		<path refid="src.compile.classpath"/>
+		<pathelement path="${src.classes.dir}"/>
+		<fileset dir="${test.lib.dir}">
+			<include name="*.jar"/>
+			<exclude name="slf4j*.jar"/>
+		</fileset>
+	</path>
+
+	<path id='test.run.classpath'>
+		<path refid="test.compile.classpath"/>
+		<pathelement path="${test.classes.dir}"/>
+	</path>
+
+	<target name="clean">
+	        <delete dir="${build.dir}"/>
+	</target>
+
+	<target name="download-ivy" unless="offline">
+		<mkdir dir="${ivy.jar.dir}"/>
+		<get src="http://repo2.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
+			dest="${ivy.jar.file}" usetimestamp="true"/>
+	</target>
+	
+	<target name="init-ivy" depends="download-ivy">
+		<path id="ivy.lib.path">
+			<fileset dir="${ivy.jar.dir}" includes="*.jar"/>
+		</path>
+		<taskdef resource="org/apache/ivy/ant/antlib.xml"
+			uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path"/>
+	</target>
+	
+	<target name="resolve"
+		description="retrieve dependencies with ivy"
+		depends="init-ivy">
+		<ivy:settings file="${ivy.settings.file}"/>
+		<ivy:resolve file="${ivy.file}"/>
+	</target>
+	
+	<target name="resolve-test"
+		description="retrieve dependencies for test compile"
+		depends="resolve">
+		<ivy:retrieve
+			conf="test"
+			pattern="${test.lib.dir}/[artifact](-[classifier]).[ext]"
+			type="jar,bundle"/>
+	</target>
+		
+	<target name="compile-src" depends="clean">
+	        <mkdir dir="${src.classes.dir}"/>
+	        <javac srcdir="${src.dir}"
+	        	destdir="${src.classes.dir}"
+	        	includeantruntime="false">
+	        	<classpath refid="src.compile.classpath"/>
+	        </javac>	
+	</target>
+	
+	<target name="compile-test"
+		depends="clean,compile-src,resolve-test">
+	    <mkdir dir="${test.classes.dir}"/>
+	    <javac srcdir="${test.dir}"
+	    	debug="true"
+	    	destdir="${test.classes.dir}"
+	    	includeantruntime="false">
+	    	<classpath refid="test.compile.classpath"/>
+	    </javac>	
+	</target>
+	
+	<target name="run-test" depends="compile-test">
+		<mkdir dir="${junit.dir}"/>
+		<junit fork="yes"
+			printsummary="withOutAndErr"
+			showoutput="true">
+			<jvmarg value="-javaagent:${test.lib.dir}/aspectjweaver.jar"/>
+			<sysproperty key="allure.results.directory" value="${allure.results.dir}"/>
+			<formatter type="xml"/>
+			<batchtest todir="${junit.dir}">
+				<fileset dir="${test.classes.dir}">
+					<include name="**/*Test.class"/>
+				</fileset>
+			</batchtest>
+			<classpath refid="test.run.classpath"/>
+		</junit>
+	</target>
+
+	<target name="allure-report" depends="run-test">
+		<path id="allure.lib.path">
+			<fileset dir="${test.lib.dir}">
+				<include name="*.jar"/>
+			</fileset>	
+		</path>
+		<taskdef name="allure-report" classname="ru.yandex.qatools.allure.ant.AllureTask" classpathref="allure.lib.path"/>
+        <mkdir dir="${allure.report.dir}"/>
+		<allure-report
+			src="${allure.results.dir}"
+			dest="${allure.report.dir}"
+			classpathref="test.run.classpath"/>
+	</target>
+	
+	<target name="jar" depends="compile-src">
+	        <mkdir dir="${jar.dir}"/>
+	        <jar destfile="${jar.dir}/${ant.project.name}-${version}.jar" basedir="${src.classes.dir}">
+	        	<manifest>
+	        		<attribute name="Main-Class" value="${main-class}"/>
+	        		<attribute name="Class-Path" value="." />
+	        	</manifest>
+	        	<zipgroupfileset excludes="META-INF/*.MF" dir="${lib.dir}" includes="*.jar" />
+	        </jar>
+	</target>
+	
+	<target name="test" depends="run-test, allure-report"/>
+	
+	<target name="build" depends="test,jar"/>
+
+</project>
