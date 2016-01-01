@@ -116,20 +116,25 @@
 	</target>
 	
 	<target name="run-test" depends="compile-test">
+		<path id="allure.junit4.lib.path">
+			<fileset dir="${test.lib.dir}">
+				<include name="*.jar"/>
+			</fileset>	
+		</path>
+		<taskdef name="junit4" classname="ru.yandex.qatools.allure.ant.junit4.Junit4Task" classpathref="allure.junit4.lib.path"/>
 		<mkdir dir="${junit.dir}"/>
-		<junit fork="yes"
-			printsummary="withOutAndErr"
-			showoutput="true">
+		<junit4 fork="yes"
+			timeout="300000"
+			listener="ru.yandex.qatools.allure.junit.AllureRunListener">
 			<jvmarg value="-javaagent:${test.lib.dir}/aspectjweaver.jar"/>
 			<sysproperty key="allure.results.directory" value="${allure.results.dir}"/>
-			<formatter type="xml"/>
-			<batchtest todir="${junit.dir}">
+			<batchtest>
 				<fileset dir="${test.classes.dir}">
 					<include name="**/*Test.class"/>
 				</fileset>
 			</batchtest>
 			<classpath refid="test.run.classpath"/>
-		</junit>
+		</junit4>
 	</target>
 
 	<target name="allure-report" depends="run-test">
