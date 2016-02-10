@@ -1,58 +1,70 @@
 /*
  *  Examples: ASpark MVC WEBDriver Allure
- *  Copyright (C) 2015  Nikolay Platov
+ *  Copyright (C) 2015-2016  Nikolay Platov
  *
  *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Lesser General Public License as published by
+ *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU Lesser General Public License
+ *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package nikoladasm.examples.aspark_mvc_webdriver_allure;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
-
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.concurrent.ConcurrentNavigableMap;
 
 import org.junit.After;
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.htmlunit.*;
+import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.introspector.BeanAccess;
 
-import nikoladasm.examples.aspark_mvc_webdriver_allure.TestCase;
-import nikoladasm.examples.aspark_mvc_webdriver_allure.TestCasesService;
-import nikoladasm.examples.aspark_mvc_webdriver_allure.pageobjects.*;
 import ru.yandex.qatools.allure.annotations.*;
+
+import nikoladasm.examples.aspark_mvc_webdriver_allure.TestCasesService;
+import nikoladasm.examples.aspark_mvc_webdriver_allure.dataobjects.Pagination;
+import nikoladasm.examples.aspark_mvc_webdriver_allure.dataobjects.TestCaseWithLinks;
 
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.mapdb.DB;
 import org.mapdb.DBMaker;
 
 @Title("Basic UI test suite")
-@RunWith(AllureJUnit4.class)
-public class UITest {
+public class UITest extends BaseTest {
 
 	private static TestCasesService service;
 	
-	private WebDriver driver;
 	private static DB db;
+	private Pagination pagination;
+	private TestCaseWithLinks testCase18;
+	private TestCaseWithLinks testCase25;
+	private TestCaseWithLinks testCase5;
+	private TestCaseWithLinks testCase5m;
+	private TestCaseWithLinks testCase5i;
+	private TestCaseWithLinks testCase10;
+	private TestCaseWithLinks testCase11ad;
+	private TestCaseWithLinks testCase51;
+	private TestCaseWithLinks testCase51i;
+	private TestCaseWithLinks testCase11;
 	
 	@BeforeClass
 	public static void serviceStart() {
 		db = DBMaker.memoryDB().make();
-		service = new TestCasesService("0.0.0.0", 8080, db);
+		Config config = new Config();
+		config.ipAddress = "0.0.0.0";
+		config.port = 8080;
+		service = new TestCasesService(config, db);
 		service.start();
 	}
 	
@@ -62,136 +74,110 @@ public class UITest {
 	}
 	
 	@Before
-	public void setupWD() {
+	public void setupWD() throws FileNotFoundException {
+		String testDataPath = System.getProperty("user.dir")+"/testdata/";
 		driver = new HtmlUnitDriver();
+		ConcurrentNavigableMap<Long, String> map = db.treeMap("testCases");
+		ConcurrentNavigableMap<String, Long> index = db.treeMap("testCasesTitleIndex");
+		TestCaseUtil.loadFromCsv(testDataPath+"testcases.csv", ";", map, index);
+		db.commit();
+		Yaml yaml = new Yaml();
+		yaml.setBeanAccess(BeanAccess.FIELD);
+		pagination = yaml.loadAs(new FileInputStream(testDataPath+"pagination.yml"), Pagination.class);
+		testCase18 = yaml.loadAs(new FileInputStream(testDataPath+"testcase18.yml"), TestCaseWithLinks.class);
+		testCase25 = yaml.loadAs(new FileInputStream(testDataPath+"testcase25.yml"), TestCaseWithLinks.class);
+		testCase5 = yaml.loadAs(new FileInputStream(testDataPath+"testcase5.yml"), TestCaseWithLinks.class);
+		testCase5m = yaml.loadAs(new FileInputStream(testDataPath+"testcase5m.yml"), TestCaseWithLinks.class);
+		testCase5i = yaml.loadAs(new FileInputStream(testDataPath+"testcase5i.yml"), TestCaseWithLinks.class);
+		testCase10 = yaml.loadAs(new FileInputStream(testDataPath+"testcase10.yml"), TestCaseWithLinks.class);
+		testCase11ad = yaml.loadAs(new FileInputStream(testDataPath+"testcase11ad.yml"), TestCaseWithLinks.class);
+		testCase51 = yaml.loadAs(new FileInputStream(testDataPath+"testcase51.yml"), TestCaseWithLinks.class);
+		testCase51i = yaml.loadAs(new FileInputStream(testDataPath+"testcase51i.yml"), TestCaseWithLinks.class);
+		testCase11 = yaml.loadAs(new FileInputStream(testDataPath+"testcase11.yml"), TestCaseWithLinks.class);
+	}
+	
+	@After
+	public void closeWD() {
 		ConcurrentNavigableMap<Long, String> map = db.treeMap("testCases");
 		ConcurrentNavigableMap<String, Long> index = db.treeMap("testCasesTitleIndex");
 		map.clear();
 		index.clear();
 		db.commit();
-		TestCaseUtil.loadFromCsv(System.getProperty("user.dir")+"/testdata/testcases.csv", ";", map, index);
-		db.commit();
-	}
-	
-	@After
-	public void closeWD() {
-		driver.close();
+		driver.quit();
 	}
 	
 	@Test
 	public void shouldBeOpenMainPage() {
-		String title = new MainPage(driver).open().title();
-		assertThat(title, is(equalTo("Test cases")));
+		openMainPage();
+		verifyMainPageTitle("Test cases");
 	}
 	
 	@Test
-	public void shouldBeShowedNavigationOnMainPage() {
-		MainPage mainPage = new MainPage(driver).open();
-		assertThat(mainPage.navigationText(1), is(equalTo("1")));
-		assertThat(mainPage.navigationLinkText(2), is(equalTo("2")));
-		assertThat(mainPage.navigationLink(2), endsWith("/?page=2"));
-		assertThat(mainPage.navigationLinkText(3), is(equalTo("3")));
-		assertThat(mainPage.navigationLink(3), endsWith("/?page=3"));
+	public void shouldBeShowedPaginationOnMainPage() {
+		openMainPage();
+		verifyPagination(pagination);
 	}
 	
 	@Test
 	public void shouldBeShowedTestCase18And25() {
-		MainPage mainPage = new MainPage(driver).open();
-		assertThat(mainPage.testCaseTitleText(18), is(equalTo("title18")));
-		assertThat(mainPage.testCaseEditLink(18), endsWith("/edittestcase?id=18"));
-		assertThat(mainPage.testCaseDeleteLink(18), endsWith("/deletetestcase?id=18"));
-		mainPage.goToPage(2);
-		assertThat(mainPage.testCaseTitleText(5), is(equalTo("title25")));
-		assertThat(mainPage.testCaseEditLink(5), endsWith("/edittestcase?id=25"));
-		assertThat(mainPage.testCaseDeleteLink(5), endsWith("/deletetestcase?id=25"));
+		openMainPage();
+		verifyTestCaseOnMainPage(testCase18);
+		goToPage(2);
+		verifyTestCaseOnMainPage(testCase25);
 	}
 	
 	@Test
 	public void shouldBeEditTestCase() {
-		MainPage mainPage = new MainPage(driver).open();
-		EditPage editPage = mainPage.goToEditPage(5);
-		assertThat(editPage.testCaseStepsText(), is(equalTo("steps5")));
-		editPage
-			.typeTestCaseSteps("steps after edited")
-			.typeTestCaseVersion(2);
-		mainPage = editPage.submitAndReturnToMainPage();
-		assertThat(mainPage.testCaseStepsText(5), is(equalTo("steps after edited")));
-		assertThat(mainPage.testCaseVersionText(5), is(equalTo("2")));
+		openMainPage();
+		editTestCase(testCase5.row);
+		verifyTestCaseForm(testCase5.testCase);
+		fillEditTestCaseForm(testCase5m.testCase);
+		submitEditFormAndReturnToMainPage();
+		verifyTestCaseOnMainPage(testCase5m);
 	}
 	
 	@Test
 	public void shouldBeErrorMessageWithEmptyStepsFieldOnEditPage() {
-		MainPage mainPage = new MainPage(driver).open();
-		EditPage editPage = mainPage.goToEditPage(5);
-		editPage
-			.typeTestCaseSteps(" ")
-			.submit();
-		assertThat(editPage.headerText(), endsWith("Steps can't be empty"));
+		openMainPage();
+		editTestCase(testCase5.row);
+		fillEditTestCaseForm(testCase5i.testCase);
+		submitEditForm();
+		verifyEditPageErrorMessage("Steps can't be empty");
 	}
 	
 	@Test
 	public void shouldBeDeleteTestCase() {
-		MainPage mainPage = new MainPage(driver).open();
-		DeletePage deletePage = mainPage.goToDeletePage(10);
-		assertThat(deletePage.testCaseTitleText(), is(equalTo("title10")));
-		mainPage = deletePage.submitAndReturnToMainPage();
-		assertThat(mainPage.testCaseTitleText(10), is(equalTo("title11")));
-		assertThat(mainPage.testCaseEditLink(10), endsWith("/edittestcase?id=11"));
-		assertThat(mainPage.testCaseDeleteLink(10), endsWith("/deletetestcase?id=11"));
+		openMainPage();
+		deleteTestCase(testCase10.row);
+		verifyTestCaseOnDeletePage(testCase10.testCase);
+		submitDeleteAndReturnToMainPage();
+		verifyTestCaseOnMainPage(testCase11ad);
 	}
 	
 	@Test
 	public void shouldBeAddTestCase() {
-		MainPage mainPage = new MainPage(driver).open();
-		AddPage addPage = mainPage.goToAddPage();
-		TestCase testCase = new TestCase();
-		testCase.title = "title51";
-		testCase.description = "description51";
-		testCase.priority = 1;
-		testCase.location = "location51";
-		testCase.status = 1;
-		testCase.steps = "steps51";
-		testCase.expectedResults = "expectedResults51";
-		testCase.assignedTo = "user51";
-		testCase.owner = "user51";
-		testCase.version = 1;
-		addPage.typeTestCaseData(testCase);
-		mainPage = addPage.submitAndReturnToMainPage();
-		mainPage.goToPage(3);
-		assertThat(mainPage.testCaseTitleText(11), is(equalTo("title51")));
-		assertThat(mainPage.testCaseEditLink(11), endsWith("/edittestcase?id=51"));
-		assertThat(mainPage.testCaseDeleteLink(11), endsWith("/deletetestcase?id=51"));
-		assertThat(mainPage.testCaseVersionText(11), is(equalTo("1")));
+		openMainPage();
+		addTestCase();
+		fillAddTestCaseForm(testCase51.testCase);
+		submitAddFormAndReturnToMainPage();
+		goToPage(3);
+		verifyTestCaseOnMainPage(testCase51);
 	}
 
 	@Test
 	public void shouldBeErrorMessageWithEmptyStepsFieldOnAddPage() {
-		MainPage mainPage = new MainPage(driver).open();
-		AddPage addPage = mainPage.goToAddPage();
-		TestCase testCase = new TestCase();
-		testCase.title = "title51";
-		testCase.description = "description51";
-		testCase.priority = 1;
-		testCase.location = "location51";
-		testCase.status = 1;
-		testCase.steps = " ";
-		testCase.expectedResults = "expectedResults51";
-		testCase.assignedTo = "user51";
-		testCase.owner = "user51";
-		testCase.version = 1;
-		addPage
-			.typeTestCaseData(testCase)
-			.submit();
-		assertThat(addPage.headerText(), endsWith("Steps can't be empty"));
+		openMainPage();
+		addTestCase();
+		fillAddTestCaseForm(testCase51i.testCase);
+		submitAddForm();
+		verifyAddPageErrorMessage("Steps can't be empty");
 	}
 	
 	@Test
 	public void shouldBeFindTestCaseByTitle() {
-		MainPage mainPage = new MainPage(driver).open();
-		FindPage findPage =
-			mainPage
-				.typeTitleInputText("title11")
-				.submitAndGoToFindPage();
-		assertThat(findPage.testCaseTitleText(), is(equalTo("title11")));
+		openMainPage();
+		fillFindTestCaseForm("title11");
+		submitFindFormAndGoToFindPage();
+		verifyTestCaseOnFindPage(testCase11.testCase);
 	}
 }

@@ -1,0 +1,4 @@
+pages: 3
+texts: {1: 1}
+linkTexts: {2: 2, 3: 3}
+references: {2: "/?page=2", 3: "/?page=3"}

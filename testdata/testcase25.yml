@@ -1,0 +1,17 @@
+row: 4
+testCase:
+ id: 25
+ title: title25
+ description: description25
+ priority: 2
+ location: location25
+ status: 2
+ steps: steps25
+ expectedResults: "expected results25"
+ assignedTo: user25
+ owner: user25
+ version: 1
+editText: edit
+editReference: "/edittestcase?id=25"
+deleteText: delete
+deleteReference: "/deletetestcase?id=25"

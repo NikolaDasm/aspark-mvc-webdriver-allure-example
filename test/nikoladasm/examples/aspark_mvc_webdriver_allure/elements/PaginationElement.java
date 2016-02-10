@@ -1,6 +1,6 @@
 /*
  *  Examples: ASpark MVC WEBDriver Allure
- *  Copyright (C) 2015-2016  Nikolay Platov
+ *  Copyright (C) 2016  Nikolay Platov
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,27 +16,32 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package nikoladasm.examples.aspark_mvc_webdriver_allure.pageobjects;
+package nikoladasm.examples.aspark_mvc_webdriver_allure.elements;
 
-import java.util.List;
-
-import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.support.FindBy;
 
-import ru.yandex.qatools.htmlelements.element.Table;
-import ru.yandex.qatools.htmlelements.loader.HtmlElementLoader;
+import ru.yandex.qatools.htmlelements.element.*;
 
-public class FindPage extends AbstractPage {
-
-	@FindBy(xpath="/html/body/main/table/tbody")
-	private Table testCasesTable;
+public class PaginationElement extends HtmlElement {
 	
-	public FindPage(WebDriver driver) {
-		HtmlElementLoader.populatePageObject(this, driver);
-		this.driver = driver;
+	@FindBy(tagName="span")
+	private TextBlock text;
+	@FindBy(tagName="a")
+	private Link link;
+	
+	public String text() {
+		return text.getText();
 	}
-
-	public List<TestCasesTableRow> testCasesTable() {
-		return testCasesTable(testCasesTable, false);
+	
+	public String linkText() {
+		return link.getText();
+	}
+	
+	public String reference() {
+		return link.getReference();
+	}
+	
+	public void click() {
+		link.click();
 	}
 }

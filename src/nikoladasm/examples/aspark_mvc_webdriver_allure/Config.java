@@ -1,6 +1,6 @@
 /*
  *  Examples: ASpark MVC WEBDriver Allure
- *  Copyright (C) 2015-2016  Nikolay Platov
+ *  Copyright (C) 2016  Nikolay Platov
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -18,26 +18,20 @@
 
 package nikoladasm.examples.aspark_mvc_webdriver_allure;
 
-import static nikoladasm.aspark.ASpark.*;
+import nikoladasm.commons.configuration.properties.annotations.*;
 
-public class Router {
-
-	private TestCaseController tcController;
+@Resource("settings.properties")
+public class Config {
 	
-	public Router(TestCaseController tcController) {
-		this.tcController = tcController;
-		initRoutes();
-	}
+	@Property("ipaddress.server")
+	@DefaultValue("0.0.0.0")
+	public String ipAddress;
 	
-	private void initRoutes() {
-		defaultResponseTransformer(DEFAULT_VIEW_ENGINE);
-		get("/", tcController::mainPage);
-		get("/addtestcase", tcController::addPage);
-		post("/addtestcase", tcController::processAddForm);
-		get("/edittestcase", tcController::editPage);
-		post("/edittestcase", tcController::processEditForm);
-		get("/deletetestcase", tcController::deletePage);
-		post("/deletetestcase", tcController::processDeleteForm);
-		post("/findtestcase", tcController::processFindForm);
-	}
+	@Property("port.server")
+	@DefaultValue("8080")
+	public int port;
+	
+	@Property("filename.db")
+	@DefaultValue("testdb")
+	public String dbFileName;
 }

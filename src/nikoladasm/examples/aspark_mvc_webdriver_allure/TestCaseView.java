@@ -1,18 +1,18 @@
 /*
  *  Examples: ASpark MVC WEBDriver Allure
- *  Copyright (C) 2015  Nikolay Platov
+ *  Copyright (C) 2015-2016  Nikolay Platov
  *
  *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Lesser General Public License as published by
+ *  it under the terms of the GNU General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
  *
  *  This program is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
+ *  GNU General Public License for more details.
  *
- *  You should have received a copy of the GNU Lesser General Public License
+ *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
@@ -48,7 +48,7 @@ public class TestCaseView {
 							button().withType("submit").withText("Find")
 						),
 						testCaseTable(model),
-						navigation(currentPage, pageCount),
+						pagination(currentPage, pageCount),
 						br(),
 						a("Add new test case").withHref("/addtestcase")
 					)
@@ -109,7 +109,7 @@ public class TestCaseView {
 		);
 	}
 	
-	private Tag navigation(int currentPage, int pageCount) {
+	private Tag pagination(int currentPage, int pageCount) {
 		if (pageCount < 2) return ul().with();
 		List<Tag> pageLinks = new LinkedList<>();
 		for (int i = 1; i < pageCount+1; i++) {
@@ -231,6 +231,18 @@ public class TestCaseView {
 			button().withType("submit").withText(buttonText)
 		);
 	}
+
+	private Tag oneRowTable(boolean withOperation, TestCase testCase) {
+		if (testCase == null) return table().with();
+		return 
+			table().with(
+					thead().with(
+						testCaseTableHeadRow()
+					),
+					tbody().with(
+						testCaseTableRow(withOperation, testCase)
+				)
+			);	}
 	
 	public Object htmlDeleteConfirmationPage(TestCase testCase) {
 		return document().render() +
@@ -242,14 +254,7 @@ public class TestCaseView {
 				body().with(
 					main().with(
 						h3("Delete this test case"),
-						table().with(
-							thead().with(
-								testCaseTableHeadRow()
-							),
-							tbody().with(
-								testCaseTableRow(false, testCase)
-							)
-						),
+						oneRowTable(false, testCase),
 						form().withMethod("post").withAction("/deletetestcase").withName("deletetestcase").with(
 							input()
 								.withType("hidden")
@@ -275,14 +280,7 @@ public class TestCaseView {
 				body().with(
 					main().with(
 						h3("Test case"),
-						table().with(
-							thead().with(
-								testCaseTableHeadRow()
-							),
-							tbody().with(
-								testCaseTableRow(false, testCase)
-							)
-						),
+						oneRowTable(false, testCase),
 						br(),
 						a("Main page").withHref("/")
 					)

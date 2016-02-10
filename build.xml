@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
      Examples: ASpark MVC WEBDriver Allure
-     Copyright (C) 2015  Nikolay Platov
+     Copyright (C) 2015-2016  Nikolay Platov
  
      This program is free software: you can redistribute it and/or modify
-     it under the terms of the GNU Lesser General Public License as published by
+     it under the terms of the GNU General Public License as published by
      the Free Software Foundation, either version 3 of the License, or
      (at your option) any later version.
  
      This program is distributed in the hope that it will be useful,
      but WITHOUT ANY WARRANTY; without even the implied warranty of
      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-     GNU Lesser General Public License for more details.
+     GNU General Public License for more details.
  
-     You should have received a copy of the GNU Lesser General Public License
+     You should have received a copy of the GNU General Public License
      along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 <project  xmlns:ivy="antlib:org.apache.ivy.ant"
 	name="aspark-mvc-example">
-	<property name="version" value="0.1.1b"/>
+	<property name="version" value="0.1.2b"/>
 	<property name="src.dir" value="src"/>
 	<property name="test.dir" value="test"/>
 	<property name="build.dir" value="build"/>
@@ -125,12 +125,14 @@
 		<mkdir dir="${junit.dir}"/>
 		<junit4 fork="yes"
 			timeout="300000"
-			listener="ru.yandex.qatools.allure.junit.AllureRunListener">
+			printsummary="true">
 			<jvmarg value="-javaagent:${test.lib.dir}/aspectjweaver.jar"/>
+			<listener name="ru.yandex.qatools.allure.junit.AllureRunListener"/>
 			<sysproperty key="allure.results.directory" value="${allure.results.dir}"/>
 			<batchtest>
 				<fileset dir="${test.classes.dir}">
 					<include name="**/*Test.class"/>
+					<exclude name="**/BaseTest.class"/>
 				</fileset>
 			</batchtest>
 			<classpath refid="test.run.classpath"/>
